@@ -176,6 +176,17 @@ def _main():
     )
 
     parser.add_argument(
+        "--hindcast-reference-year",
+        help="For encoding hincast-like outputs",
+    )
+
+    parser.add_argument(
+        "--staging-dates",
+        help="For encoding hincast-like outputs",
+    )
+
+    # TODO: deprecate that option
+    parser.add_argument(
         "--model-version",
         default="latest",
         help="Model version",

@@ -54,14 +54,14 @@ class Model:
     lagged = False
     assets_extra_dir = None
     retrieve = {}  # Extra parameters for retrieve
-    version = 1
+    version = 1  # To be overriden in subclasses
 
     def __init__(self, input, output, download_assets, **kwargs):
-        self.input = get_input(input, self, **kwargs)
-        self.output = get_output(output, self, **kwargs)
-
         for k, v in kwargs.items():
             setattr(self, k, v)
+
+        self.input = get_input(input, self, **kwargs)
+        self.output = get_output(output, self, **kwargs)
 
         # We need to call it to initialise the default args
         args = self.parse_model_args(self.model_args)
@@ -107,6 +107,11 @@ class Model:
     def collect_archive_requests(self, written):
         if self.archive_requests:
             handle, path = written
+            if self.hindcast_reference_year:
+                # The clone is necessary because the handle
+                # does not return always return recently set keys
+                handle = handle.clone()
+
             self.archiving[path].add(handle.as_mars())
 
     def finalise(self):
@@ -195,7 +200,7 @@ class Model:
         LOG.info("Model initialisation: %s", seconds(elapsed))
         return Stepper(step, self.lead_time)
 
-    def datetimes(self):
+    def _datetimes(self, dates):
         date = self.date
         assert isinstance(date, int)
         if date <= 0:
@@ -212,6 +217,41 @@ class Model:
         if not lagged:
             lagged = [0]
 
+        result = []
+        for basedate in dates:
+            for lag in lagged:
+                date = basedate + datetime.timedelta(hours=lag)
+                result.append(
+                    (
+                        date.year * 10000 + date.month * 100 + date.day,
+                        date.hour,
+                    ),
+                )
+
+        return result
+
+    def datetimes(self):
+        if self.staging_dates:
+            dates = []
+            with open(self.staging_dates) as f:
+                for line in f:
+                    dates.append(datetime.datetime.fromisoformat(line.strip()))
+
+            return self._datetimes(dates)
+
+        date = self.date
+        assert isinstance(date, int)
+        if date <= 0:
+            date = datetime.datetime.utcnow() + datetime.timedelta(days=date)
+            date = date.year * 10000 + date.month * 100 + date.day
+
+        time = self.time
+        assert isinstance(time, int)
+        if time < 100:
+            time *= 100
+
+        assert time in (0, 600, 1200, 1800), time
+
         full = datetime.datetime(
             date // 10000,
             date % 10000 // 100,
@@ -219,18 +259,7 @@ class Model:
             time // 100,
             time % 100,
         )
-
-        result = []
-        for lag in lagged:
-            date = full + datetime.timedelta(hours=lag)
-            result.append(
-                (
-                    date.year * 10000 + date.month * 100 + date.day,
-                    date.hour,
-                ),
-            )
-
-        return result
+        return self._datetimes([full])
 
     def print_fields(self):
         param, level = self.param_level_pl
