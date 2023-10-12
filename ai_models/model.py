@@ -57,11 +57,11 @@ class Model:
     version = 1  # To be overriden in subclasses
 
     def __init__(self, input, output, download_assets, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-
         self.input = get_input(input, self, **kwargs)
         self.output = get_output(output, self, **kwargs)
+
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
         # We need to call it to initialise the default args
         args = self.parse_model_args(self.model_args)
@@ -156,6 +156,10 @@ class Model:
             device.upper(),
         )
 
+        if self.only_gpu:
+            if device == "cpu":
+                raise RuntimeError("GPU is not available")
+
         return device
 
     @cached_property
@@ -167,10 +171,13 @@ class Model:
 
         providers = []
 
-        if GPUtil.getAvailable():
-            providers += [
-                "CUDAExecutionProvider",  # CUDA
-            ]
+        try:
+            if GPUtil.getAvailable():
+                providers += [
+                    "CUDAExecutionProvider",  # CUDA
+                ]
+        except Exception:
+            pass
 
         if sys.platform == "darwin":
             if platform.machine() == "arm64":
@@ -188,6 +195,12 @@ class Model:
             "Using device '%s'. The speed of inference depends greatly on the device.",
             ort.get_device(),
         )
+
+        if self.only_gpu:
+            assert isinstance(ort.get_device(), str)
+            if ort.get_device() == "CPU":
+                raise RuntimeError("GPU is not available")
+
         return providers
 
     def timer(self, title):
