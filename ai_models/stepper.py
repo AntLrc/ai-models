@@ -16,7 +16,6 @@ LOG = logging.getLogger(__name__)
 class Stepper:
     def __init__(self, step, lead_time):
         self.step = step
-        print("lalalalalalalalal\n\n\n\n\n")
         self.lead_time = lead_time
         self.start = time.time()
         self.last = self.start
