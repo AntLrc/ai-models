@@ -19,7 +19,10 @@ class Stepper:
         self.lead_time = lead_time
         self.start = time.time()
         self.last = self.start
-        self.num_steps = lead_time // step
+        steps_24h = lead_time // 24
+        steps_6h = (lead_time - 24 * steps_24h) // 6
+        self.num_steps = steps_24h + steps_6h
+        #self.num_steps = lead_time // step
         LOG.info("Starting inference for %s steps (%sh).", self.num_steps, lead_time)
 
     def __enter__(self):
