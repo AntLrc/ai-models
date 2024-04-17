@@ -190,6 +190,18 @@ def _main():
         help="Fail if GPU is not available",
         action="store_true",
     )
+    
+    parser.add_argument(
+        "--storm-efficiency",
+        help="Swtich to storm efficiency mode, computing only defined lead times",
+        action="store_true",
+    )
+    
+    parser.add_argument(
+        "--lead-times",
+        help="List of lead times to compute in storm efficiency mode",
+        nargs="*",
+    )
 
     # TODO: deprecate that option
     parser.add_argument(
