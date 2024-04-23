@@ -191,9 +191,12 @@ def _main():
         action="store_true",
     )
     
+    # My plug-in to treat storms in post processing
     parser.add_argument(
-        "--storm-efficiency",
-        help="Swtich to storm efficiency mode, computing only defined lead times",
+        "--post-processing",
+        help="Switch to storm efficiency mode, computing only defined lead times.\
+        To use with '--lead-times ... --input file --file path/to/input/file\
+        --path path/to/output/dir' ",
         action="store_true",
     )
     
@@ -201,6 +204,12 @@ def _main():
         "--lead-times",
         help="List of lead times to compute in storm efficiency mode",
         nargs="*",
+    )
+    
+    parser.add_argument(
+        "--test-mode",
+        help="Switch to test mode, not computing anything.",
+        action="store_true",
     )
 
     # TODO: deprecate that option

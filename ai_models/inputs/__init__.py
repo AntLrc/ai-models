@@ -112,6 +112,12 @@ class FileInput:
                     for date, time in self.owner.datetimes()]
         
         ds = xr.open_dataset(self.file + "_surface.grib")
+        if self.owner.post_processing: # if we are doing general post processing, we don't need to keep the
+            # following surface fields
+            ds_new = ds.sel(time=date_times)
+            ds.close()
+            del ds
+            return ds_new
         ds_times = [ds.time.values + step for step in ds.step.values] # ds.time contains first date only
         steps_idxs = [i for i in range(len(ds_times)) if ds_times[i] in date_times]
         #if len(steps_idxs)==1:
@@ -123,7 +129,7 @@ class FileInput:
         return ds_new
 
     @cached_property
-    def fields_pl(self):        
+    def fields_pl(self):
         date_times = [np.datetime64(f"{str(date)[:4]}-{str(date)[4:6]}-{str(date)[6:]}T{str(time).zfill(2)}") \
                     for date, time in self.owner.datetimes()]
         

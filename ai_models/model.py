@@ -22,6 +22,7 @@ from .checkpoint import peek
 from .inputs import get_input
 from .outputs import get_output
 from .stepper import Stepper
+from .pp_stepper import PPStepper
 
 LOG = logging.getLogger(__name__)
 
@@ -72,6 +73,9 @@ class Model:
         if self.assets_sub_directory:
             if self.assets_extra_dir is not None:
                 self.assets += self.assets_extra_dir
+        
+        if self.lead_times:
+            self.lead_times = list(map(int, kwargs["lead_times"])) # To be used in PPStepper
 
         LOG.debug("Asset directory is %s", self.assets)
 
@@ -212,6 +216,13 @@ class Model:
         elapsed = time.time() - self.created
         LOG.info("Model initialisation: %s", seconds(elapsed))
         return Stepper(step, self.lead_time)
+    
+    def ppstepper(self, steps):
+        # We assume that we call this method only once
+        # just before the first iteration.
+        elapsed = time.time() - self.created
+        LOG.info("Model initialisation: %s", seconds(elapsed))
+        return PPStepper(steps, self.lead_times)
 
     def _datetimes(self, dates):
         date = self.date
@@ -224,7 +235,9 @@ class Model:
         assert isinstance(time, int)
         if time < 100:
             time *= 100
-        assert time in (0, 600, 1200, 1800), time
+        if not(self.post_processing):
+            print("\n\n Post-processing: " + str(self.post_processing) + "\n\n")
+            assert time in (0, 600, 1200, 1800), time
 
         lagged = self.lagged
         if not lagged:
@@ -263,7 +276,9 @@ class Model:
         if time < 100:
             time *= 100
 
-        assert time in (0, 600, 1200, 1800), time
+        if not(self.post_processing):
+            print("\n\n Post-processing: " + str(self.post_processing) + "\n\n")
+            assert time in (0, 600, 1200, 1800), time
 
         full = datetime.datetime(
             date // 10000,
